@@ -1,5 +1,23 @@
 let transactions = [];
 let myChart;
+let db;
+let dbReq = indexedDB.open("budget-db", 1);
+
+dbReq.onupgradeneeded = event => {
+  db = event.target.result;
+
+  // create object store
+  let trans = db.createObjectStore('budget-db', { autoIncrement: true });
+};
+
+dbReq.onsuccess = event => {
+  db = event.target.result;
+};
+
+dbReq.onerror = event => {
+  alert("Problem opening local indexedDB", event.target.errorCode);
+};
+
 
 fetch("/api/transaction")
   .then(response => {
@@ -12,7 +30,41 @@ fetch("/api/transaction")
     populateTotal();
     populateTable();
     populateChart();
-  });
+});
+
+// when load check if online if so push indexed transactions to db
+window.addEventListener("load", () => {
+  if (navigator.onLine) {
+    let trans = db.transaction(["budget-db"], "readwrite");
+    let store = trans.objectStore("budget-db");
+    let req = store.getAll();
+
+    req.onsuccess = event => {
+      fetch("/api/transaction", {
+        method: "POST",
+        body: JSON.stringify(event.target.result),
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "Content-Type": "application/json"
+        }
+      }).then(store.clear())
+        .then(() => {
+          fetch("/api/transaction")
+            .then(response => {
+              return response.json();
+            })
+            .then(data => {
+              // save db data on global variable
+              transactions = data;
+
+              populateTotal();
+              populateTable();
+              populateChart();
+          });
+        })
+    };
+  };
+});  
 
 function populateTotal() {
   // reduce transaction amounts to a single total value
@@ -136,13 +188,28 @@ function sendTransaction(isAdding) {
   })
   .catch(err => {
     // fetch failed, so save in indexed db
-    saveRecord(transaction);
+    addRecord(db, transaction);
 
     // clear form
     nameEl.value = "";
     amountEl.value = "";
   });
 }
+
+function addRecord(db, data) {
+  console.log("AddRecord hit");
+  // start a indDB transaction
+  let trans = db.transaction(["budget-db"], "readwrite");
+  let store = trans.objectStore('budget-db');
+  
+  // put new transaction (as in adding or sub money, not the objstore transaction)
+  let newData = { name: data.name ,value: data.value, date: data.date };
+  store.add(newData);
+
+  // success/ failure
+  trans.oncomplete = msg => console.log("Successfully stored in local db", msg);
+  trans.onerror = err => console.log("Error storing transaction in local db", err);
+};
 
 document.querySelector("#add-btn").onclick = function() {
   sendTransaction(true);
@@ -151,3 +218,5 @@ document.querySelector("#add-btn").onclick = function() {
 document.querySelector("#sub-btn").onclick = function() {
   sendTransaction(false);
 };
+
+// have a function to try to make a req to save record when trans made
