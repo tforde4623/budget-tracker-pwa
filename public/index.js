@@ -6,7 +6,6 @@ let dbReq = indexedDB.open("budget-db", 1);
 dbReq.onupgradeneeded = event => {
   db = event.target.result;
 
-  // create object store
   let trans = db.createObjectStore('budget-db', { autoIncrement: true });
 };
 
@@ -17,19 +16,6 @@ dbReq.onsuccess = event => {
 dbReq.onerror = event => {
   alert("Problem opening local indexedDB", event.target.errorCode);
 };
-
-// fetch("/api/transaction")
-//   .then(response => {
-//     return response.json();
-//   })
-//   .then(data => {
-//     // save db data on global variable
-//     transactions = data;
-
-//     populateTotal();
-//     populateTable();
-//     populateChart();
-// });
 
 // when load check if online if so push indexed transactions to db
 window.addEventListener("load", () => {
