@@ -183,7 +183,6 @@ function sendTransaction(isAdding) {
 }
 
 function addRecord(db, data) {
-  console.log("AddRecord hit");
   // start a indDB transaction
   let trans = db.transaction(["budget-db"], "readwrite");
   let store = trans.objectStore('budget-db');
