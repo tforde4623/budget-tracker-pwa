@@ -18,8 +18,37 @@ dbReq.onerror = event => {
   alert("Problem opening local indexedDB", event.target.errorCode);
 };
 
+// fetch("/api/transaction")
+//   .then(response => {
+//     return response.json();
+//   })
+//   .then(data => {
+//     // save db data on global variable
+//     transactions = data;
+
+//     populateTotal();
+//     populateTable();
+//     populateChart();
+// });
+
 // when load check if online if so push indexed transactions to db
 window.addEventListener("load", () => {
+  if (!navigator.onLine) {
+    console.log("BOOM");
+    fetch("/api/transaction")
+      .then(response => {
+        return response.json();
+      })
+      .then(data => {
+        // save db data on global variable
+        transactions = data;
+
+        populateTotal();
+        populateTable();
+        populateChart();
+    });
+  }
+  
   if (navigator.onLine) {
     let trans = db.transaction(["budget-db"], "readwrite");
     let store = trans.objectStore("budget-db");
